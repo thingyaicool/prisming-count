@@ -1,0 +1,80 @@
+{
+	"geode": "5.11.2",
+	"gd": {
+		"win": "2.2081"
+	},
+	"version": "v0.1.0",
+	"id": "local.prism",
+	"name": "Prism",
+	"developer": "You",
+	"description": "Frame counter, macro recorder, custom TPS/FPS and more.",
+	"tags": ["gameplay", "utility", "interface", "cheat", "offline"],
+	"settings": {
+		"hud-title": { "type": "title", "name": "Frame Counter HUD" },
+		"show-frame-counter": {
+			"type": "bool", "default": true,
+			"name": "Show frame counter",
+			"description": "Shows the current physics frame in the corner of the screen during a level."
+		},
+		"hud-show-time": {
+			"type": "bool", "default": true,
+			"name": "Show level time",
+			"description": "Adds the level time in seconds under the frame number."
+		},
+		"hud-show-rates": {
+			"type": "bool", "default": false,
+			"name": "Show FPS / TPS",
+			"description": "Adds measured FPS and the active TPS."
+		},
+		"hud-x": {
+			"type": "int", "default": 8, "min": 0, "max": 1200,
+			"name": "HUD X offset", "description": "Pixels from the left edge."
+		},
+		"hud-y": {
+			"type": "int", "default": 8, "min": 0, "max": 700,
+			"name": "HUD Y offset", "description": "Pixels from the top edge."
+		},
+		"hud-scale": {
+			"type": "float", "default": 0.6, "min": 0.2, "max": 2.0,
+			"name": "HUD scale"
+		},
+		"hud-opacity": {
+			"type": "float", "default": 0.9, "min": 0.1, "max": 1.0,
+			"name": "HUD opacity"
+		},
+
+		"timing-title": { "type": "title", "name": "Timing" },
+		"custom-tps-enabled": {
+			"type": "bool", "default": false,
+			"name": "Custom TPS",
+			"description": "Run physics at your own tick rate. EXPERIMENTAL. Not compatible with other TPS/physics bypass mods. Blocks saving progress."
+		},
+		"custom-tps": {
+			"type": "int", "default": 240, "min": 30, "max": 2000,
+			"name": "TPS", "description": "Physics ticks per second (vanilla is 240)."
+		},
+		"custom-fps-enabled": {
+			"type": "bool", "default": false,
+			"name": "Custom FPS",
+			"description": "Set the render frame rate. VSync can still cap it."
+		},
+		"custom-fps": {
+			"type": "int", "default": 60, "min": 30, "max": 1000,
+			"name": "FPS"
+		},
+
+		"macro-title": { "type": "title", "name": "Macros" },
+		"macro-block-input": {
+			"type": "bool", "default": true,
+			"name": "Ignore your clicks during playback",
+			"description": "While a macro plays, real clicks are ignored so they can't desync it."
+		},
+
+		"guard-title": { "type": "title", "name": "Leaderboard Guard" },
+		"safe-mode": {
+			"type": "bool", "default": true,
+			"name": "Safe mode",
+			"description": "If a macro played or custom TPS was on during an attempt, that attempt's progress is not saved."
+		}
+	}
+}
