@@ -18,7 +18,7 @@ using namespace prism_glue;
 class $modify(PrismBaseGameLayer, GJBaseGameLayer) {
     void processCommands(float dt, bool isHalfTick, bool isLastTick) {
         auto& st = state();
-        const uint32_t frame = static_cast<uint32_t>(std::max(0, m_gameState.m_currentProgress));
+        const uint32_t frame = static_cast<uint32_t>(std::max<int64_t>(0, m_gameState.m_currentProgress));
         st.curFrame = frame;
 
         if (st.mode == MacroMode::Playing) {
