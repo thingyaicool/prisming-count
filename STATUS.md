@@ -88,7 +88,7 @@ in-game) and all its overlays.
 
 ## Android build support update
 
-- `mod.json` declares Geometry Dash 2.2081 for Windows and Android, with Geode SDK v5.11.2.
+- `mod.json` declares Geometry Dash 2.2081 for Windows and Android, with Geode compatibility set to `>=v5.11.2` rather than a stale loader version.
 - GitHub Actions runs `make test` before building Win64, Android64, and Android32. Artifact names:
   `Prism-Windows`, `Prism-Android64`, and `Prism-Android32`.
 - The official action maps Android64 to `arm64-v8a` and Android32 to `armeabi-v7a`. It does not

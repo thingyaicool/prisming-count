@@ -1,6 +1,6 @@
 # Prism (Geode mod for Geometry Dash 2.2081)
 
-Working name. Supported game version: Geometry Dash 2.2081. The build uses Geode SDK v5.11.2.
+Working name. Supported game version: Geometry Dash 2.2081. This project targets Geode v5.11.2 and above, and its manifest now declares the compatibility requirement instead of a stale loader version.
 
 ## Build and artifacts
 

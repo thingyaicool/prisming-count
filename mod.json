@@ -1,14 +1,14 @@
 {
-	"geode": "5.11.2",
+	"geode": ">=v5.11.2",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081"
 	},
-	"version": "v0.1.0",
+	"version": "v1.0.0",
 	"id": "local.prism",
 	"name": "Prism",
-	"developer": "You",
-	"description": "Frame counter, macro recorder, custom TPS/FPS and more.",
+	"developer": "thingyaicool",
+	"description": "Prism timing and frame tools for Geometry Dash 2.2081 on Geode SDK v5.11.2.",
 	"tags": ["gameplay", "utility", "interface", "cheat", "offline"],
 	"settings": {
 		"hud-title": { "type": "title", "name": "Frame Counter HUD" },
@@ -26,11 +26,6 @@
 			"type": "bool", "default": false,
 			"name": "Show FPS / TPS",
 			"description": "Adds measured FPS and the active TPS."
-		},
-		"hud-show-click-timings": {
-			"type": "bool", "default": true,
-			"name": "Show click timing histogram",
-			"description": "Shows the latest physical press frame and observed gaps between presses; these are not verified success windows."
 		},
 		"hud-show-click-timings": {
 			"type": "bool", "default": true,
