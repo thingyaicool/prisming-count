@@ -10,7 +10,7 @@ jobs:
     name: Core tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run core tests
         run: make test
 
@@ -35,7 +35,7 @@ jobs:
             artifact: Prism-Android32
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build the mod
         id: build
         uses: geode-sdk/build-geode-mod@main
