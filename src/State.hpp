@@ -4,6 +4,7 @@
 #include <Geode/Geode.hpp>
 
 #include <cctype>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -71,10 +72,16 @@ inline State& state() { return State::get(); }
 // ---- macro files -------------------------------------------------------------
 
 inline std::filesystem::path macroDir() {
-    auto dir = geode::Mod::get()->getSaveDir() / "macros";
-    std::error_code ec;
-    std::filesystem::create_directories(dir, ec);
-    return dir;
+    try {
+        auto* mod = geode::Mod::get();
+        if (!mod) return {};
+        auto dir = mod->getSaveDir() / "macros";
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+        return ec ? std::filesystem::path{} : dir;
+    } catch (std::exception const&) {
+        return {};
+    }
 }
 
 inline std::string safeName(std::string s) {
@@ -89,22 +96,33 @@ inline std::filesystem::path macroPathFor(GJGameLevel* level) {
         stem = "level-" + std::to_string(level->m_levelID.value());
     else
         stem = "local-" + safeName(level ? std::string(level->m_levelName) : std::string());
-    return macroDir() / (stem + ".pmacro");
+    const auto dir = macroDir();
+    return dir.empty() ? std::filesystem::path{} : dir / (stem + ".pmacro");
 }
 
 inline bool saveMacroFile(std::filesystem::path const& path, prism::Macro const& m) {
-    std::ofstream f(path, std::ios::binary | std::ios::trunc);
-    if (!f) return false;
-    f << m.serialize();
-    return static_cast<bool>(f);
+    try {
+        if (path.empty()) return false;
+        std::ofstream f(path, std::ios::binary | std::ios::trunc);
+        if (!f) return false;
+        f << m.serialize();
+        return static_cast<bool>(f);
+    } catch (std::exception const&) {
+        return false;
+    }
 }
 
 inline std::optional<prism::Macro> loadMacroFile(std::filesystem::path const& path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) return std::nullopt;
-    std::stringstream ss;
-    ss << f.rdbuf();
-    return prism::Macro::parse(ss.str());
+    try {
+        if (path.empty()) return std::nullopt;
+        std::ifstream f(path, std::ios::binary);
+        if (!f) return std::nullopt;
+        std::stringstream ss;
+        ss << f.rdbuf();
+        return prism::Macro::parse(ss.str());
+    } catch (std::exception const&) {
+        return std::nullopt;
+    }
 }
 
 }  // namespace prism_glue

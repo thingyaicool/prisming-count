@@ -2,6 +2,7 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/platform/cplatform.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -58,7 +59,9 @@ class $modify(PrismPlayLayer, PlayLayer) {
         if (st.appliedFps == fps) return;
         st.appliedFps = fps;
         GameManager::get()->m_customFPSTarget = static_cast<float>(fps);
+    #if !defined(GEODE_IS_ANDROID)
         GameManager::get()->setGameVariable("0116", true);
+    #endif
         CCApplication::sharedApplication()->setAnimationInterval(1.0 / fps);
     }
 

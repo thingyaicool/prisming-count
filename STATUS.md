@@ -6,27 +6,27 @@ Working name. Rename freely (mod id / display name are not baked into the core).
 
 - `core/` is plain C++20 with no Geode or game dependency. It is compiled and tested on its own
   (`make test`: 212 checks, clean under AddressSanitizer, UBSan and ThreadSanitizer).
-- `src/` (not written yet) will hold the Geode glue: hooks, UI nodes, the real `ISim`/`IRunner`
-  implementations that drive Geometry Dash. It needs the Geode SDK and a running game to verify.
+- `src/` contains the current Geode hooks and UI controls. They need the Geode SDK to compile and a
+  running game to verify; platform builds and in-game behavior have not yet been validated.
 
 ## Frame Counter (25) and Pathfinder (25): what exists
 
-Legend: CORE = logic written and tested here. GLUE = needs Geode hooks / UI, not written yet.
+Legend: CORE = engine-independent logic written and tested here. GLUE = Geode/game integration; some glue is written but still needs a platform build and in-game verification.
 
 Frame Counter
 |  # | Feature                      | Status |
 |----|------------------------------|--------|
-|  1 | Live Frame Counter           | GLUE (reads sim frame) |
+|  1 | Live Frame Counter           | GLUE (written, unverified) |
 |  2 | Click Frame Windows          | CORE `frame_windows.hpp` |
 |  3 | Frame Window Export          | CORE CSV + JSON |
-|  4 | Frame Markers                | CORE `MarkerList` (UI = GLUE) |
+|  4 | Frame Markers                | CORE `MarkerList` + pause button (unverified) |
 |  5 | Frame Stepper                | GLUE |
 |  6 | Native CBF Mode              | CORE `resolveInputStep` (hook = GLUE) |
-|  7 | Custom TPS                   | CORE `StepScheduler` (hook = GLUE) |
-|  8 | Custom FPS                   | CORE `StepScheduler`, `nearestDivisorFps` (hook = GLUE) |
+|  7 | Custom TPS                   | CORE `StepScheduler` + runtime hook (unverified) |
+|  8 | Custom FPS                   | CORE `StepScheduler`, `nearestDivisorFps` + runtime API (unverified) |
 |  9 | Seed Lock                    | GLUE |
 | 10 | Latency Calibrator           | CORE `LatencyCalibrator` (measurement UI = GLUE) |
-| 11 | Built-in Macro Recorder      | CORE `Macro` data model + file format (capture/replay = GLUE) |
+| 11 | Built-in Macro Recorder      | CORE `Macro` + runtime capture/replay and file operations (unverified) |
 | 12 | Frame-by-Frame Macro Editor  | CORE `MacroEditor` (timeline UI = GLUE) |
 | 13 | Rewind and Re-record         | CORE `SnapshotStore` (state capture = GLUE) |
 | 14 | Desync Detector              | CORE `firstDivergence` (trace capture = GLUE) |
@@ -37,10 +37,10 @@ Frame Counter
 | 19 | Upcoming Strip               | GLUE |
 | 20 | Lag Culprit Finder           | GLUE |
 | 21 | Trigger Inspector            | GLUE |
-| 22 | Fully Customizable UI        | GLUE |
-| 23 | Settings Hub                 | GLUE |
+| 22 | Fully Customizable UI        | Partial settings + HUD and responsive pause controls (unverified) |
+| 23 | Settings Hub                 | Geode built-in settings (searchable hub not implemented) |
 | 24 | Command Palette              | CORE fuzzy matcher (popup UI = GLUE) |
-| 25 | Leaderboard Guard            | CORE `LeaderboardGuard` (submission hook = GLUE) |
+| 25 | Leaderboard Guard            | CORE `LeaderboardGuard` + submission hook (unverified) |
 
 Pathfinder
 Solver core (CORE, `pathfinder.hpp`): beam search, per-frame input choices, multi-route output,
@@ -86,5 +86,21 @@ Finder, Trigger Inspector, Command Palette UI, latency calibration UI, drag-to-p
 Pathfinder: the in-game `ISim` (needs checkpoint-based state cloning; performance must be measured
 in-game) and all its overlays.
 
-Build/verify path: push to GitHub, let the Windows CI compile it against Geode v5.11.2, and send me
-any compiler errors. Then run the first-run checklist in README.md.
+## Android build support update
+
+- `mod.json` declares Geometry Dash 2.2081 for Windows and Android, with Geode SDK v5.11.2.
+- GitHub Actions runs `make test` before building Win64, Android64, and Android32. Artifact names:
+  `Prism-Windows`, `Prism-Android64`, and `Prism-Android32`.
+- The official action maps Android64 to `arm64-v8a` and Android32 to `armeabi-v7a`. It does not
+  produce x86_64 Android binaries. The Intel Chromebook ABI is unverified because no Android device
+  is connected to this environment.
+- Binding review found `processCommands(float, bool, bool)` and `getModifiedDelta(float) -> double`
+  in the Geometry Dash 2.2081 declarations. The Android-only `setGameVariable` call is guarded;
+  Custom FPS still calls the Cocos animation-interval API on Android.
+- Macro storage uses `Mod::get()->getSaveDir()/macros`, reports filesystem failures to the existing
+  Save/Load controls, and pause controls adapt their layout and minimum touch height to the window.
+- Local `make test`: 212 checks passed. Geode compilation and the in-game checklist remain pending
+  hosted CI and compatible game installations. A successful build alone does not prove correct
+  frame sampling, macro replay timing, safe-mode behavior, or custom TPS/FPS behavior.
+
+Adding Android build targets does not change the status of unfinished modules listed above.

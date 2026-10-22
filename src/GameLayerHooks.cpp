@@ -16,7 +16,7 @@ using namespace geode::prelude;
 using namespace prism_glue;
 
 class $modify(PrismBaseGameLayer, GJBaseGameLayer) {
-    void processCommands(float dt) {
+    void processCommands(float dt, bool isHalfTick, bool isLastTick) {
         auto& st = state();
         const uint32_t frame = static_cast<uint32_t>(std::max(0, m_gameState.m_currentProgress));
         st.curFrame = frame;
@@ -42,7 +42,7 @@ class $modify(PrismBaseGameLayer, GJBaseGameLayer) {
         }
 
         st.inCommands = true;
-        GJBaseGameLayer::processCommands(dt);
+        GJBaseGameLayer::processCommands(dt, isHalfTick, isLastTick);
         st.inCommands = false;
     }
 
@@ -62,15 +62,15 @@ class $modify(PrismBaseGameLayer, GJBaseGameLayer) {
     }
 
     // Custom TPS: same shape as the vanilla step-size calculation, with our tick rate.
-    float getModifiedDelta(float delta) {
+    double getModifiedDelta(float delta) {
         auto& st = state();
         if (!st.tpsActive()) return GJBaseGameLayer::getModifiedDelta(delta);
 
-        const float tps = static_cast<float>(std::clamp<int64_t>(cfgInt("custom-tps"), 30, 2000));
-        const float modifier = std::min(1.f, m_gameState.m_timeWarp) / tps;
-        const float total = delta + m_extraDelta;
+        const double tps = static_cast<double>(std::clamp<int64_t>(cfgInt("custom-tps"), 30, 2000));
+        const double modifier = std::min(1.f, m_gameState.m_timeWarp) / tps;
+        const double total = delta + m_extraDelta;
         const int steps = std::max(1, static_cast<int>(total / modifier));
-        const float newDelta = static_cast<float>(steps) * modifier;
+        const double newDelta = static_cast<double>(steps) * modifier;
         m_extraDelta = total - newDelta;
         return newDelta;
     }
