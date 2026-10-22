@@ -44,10 +44,10 @@ and Settings entries. Frame Counter contains the existing Record / Play / Stop /
 controls; Settings opens Geode's settings page for Prism. Pathfinder currently exposes only its status:
 the solver core exists, but an in-game Geometry Dash physics simulator and route UI are not implemented.
 
-The in-game HUD can show an **FB COUNTER** label, latest physical click number/player/frame, and a
-colored histogram of observed press-to-press gaps using the 0-1, 1-2, 2-3, 3-4, 4-5, 5-6, 6-8,
-8-10, and 10+ frame bands. The adjacent millisecond value is estimated from the active TPS. This is
-input history only; it does not determine a click's successful timing window. The concept image at
+The in-game HUD can show an **FB COUNTER** label, the five most recent physical clicks with their
+player, sequence, sampled frame, and inter-click gap, plus a colored histogram of observed integer
+gaps: 0-1, 2, 3, 4, 5, 6, 7-8, 9-10, and 11+ frames. Milliseconds are estimated from the active
+TPS. This is input history only; it does not determine a click's successful timing window. The concept image at
 [`assets/prism-ui-concept.svg`](assets/prism-ui-concept.svg) illustrates the intended arrangement,
 not a captured or verified game screen.
 

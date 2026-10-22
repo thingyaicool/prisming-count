@@ -4,6 +4,7 @@
 // pattern is exactly reproducible (no float drift between runs).
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <optional>
@@ -27,6 +28,55 @@ inline constexpr size_t observedPressGapBucket(uint32_t gapFrames) {
     if (gapFrames <= 10) return 7;
     return 8;
 }
+
+struct ClickTimingEvent {
+    uint32_t sequence = 0;
+    uint32_t frame = 0;
+    uint32_t gapFrames = 0;
+    uint8_t player = 0;
+    bool hasGap = false;
+};
+
+class ClickTimingTracker {
+public:
+    static constexpr size_t kBucketCount = 9;
+    static constexpr size_t kRecentLimit = 5;
+
+    void recordPress(uint32_t frame, uint8_t player) {
+        ClickTimingEvent event;
+        event.sequence = ++pressCount_;
+        event.frame = frame;
+        event.player = player;
+        if (hasPrevious_ && frame >= previousFrame_) {
+            event.gapFrames = frame - previousFrame_;
+            event.hasGap = true;
+            ++gapCounts_[observedPressGapBucket(event.gapFrames)];
+        }
+        previousFrame_ = frame;
+        hasPrevious_ = true;
+        recent_.push_back(event);
+        if (recent_.size() > kRecentLimit) recent_.erase(recent_.begin());
+    }
+
+    void reset() {
+        gapCounts_.fill(0);
+        pressCount_ = 0;
+        previousFrame_ = 0;
+        hasPrevious_ = false;
+        recent_.clear();
+    }
+
+    uint32_t pressCount() const { return pressCount_; }
+    const std::array<uint32_t, kBucketCount>& gapCounts() const { return gapCounts_; }
+    const std::vector<ClickTimingEvent>& recent() const { return recent_; }
+
+private:
+    std::array<uint32_t, kBucketCount> gapCounts_{};
+    uint32_t pressCount_ = 0;
+    uint32_t previousFrame_ = 0;
+    bool hasPrevious_ = false;
+    std::vector<ClickTimingEvent> recent_;
+};
 
 // Distributes `tps` physics steps over `fps` render frames per second using a
 // Bresenham-style accumulator: the per-frame step count is deterministic and

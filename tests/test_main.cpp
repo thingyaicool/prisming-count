@@ -231,6 +231,20 @@ static void testTiming() {
     CHECK(observedPressGapBucket(6) == 5 && observedPressGapBucket(7) == 6);
     CHECK(observedPressGapBucket(8) == 6 && observedPressGapBucket(9) == 7);
     CHECK(observedPressGapBucket(10) == 7 && observedPressGapBucket(11) == 8);
+    ClickTimingTracker clickTiming;
+    clickTiming.recordPress(100, 0);
+    clickTiming.recordPress(104, 0);
+    clickTiming.recordPress(106, 1);
+    CHECK(clickTiming.pressCount() == 3);
+    CHECK(clickTiming.recent().size() == 3);
+    CHECK(!clickTiming.recent()[0].hasGap && clickTiming.recent()[1].gapFrames == 4);
+    CHECK(clickTiming.recent()[2].player == 1 && clickTiming.recent()[2].gapFrames == 2);
+    CHECK(clickTiming.gapCounts()[3] == 1 && clickTiming.gapCounts()[1] == 1);
+    for (uint32_t frame = 107; frame < 114; ++frame) clickTiming.recordPress(frame, 0);
+    CHECK(clickTiming.pressCount() == 10 && clickTiming.recent().size() == ClickTimingTracker::kRecentLimit);
+    CHECK(clickTiming.recent().front().sequence == 6 && clickTiming.recent().back().sequence == 10);
+    clickTiming.reset();
+    CHECK(clickTiming.pressCount() == 0 && clickTiming.recent().empty());
     for (auto [tps, fps] : std::vector<std::pair<uint32_t, uint32_t>>{{240, 60}, {240, 144}, {1000, 360}, {480, 60}, {60, 240}, {7, 3}}) {
         StepScheduler s(tps, fps);
         uint64_t total = 0;

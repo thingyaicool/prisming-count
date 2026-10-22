@@ -163,53 +163,81 @@ class $modify(PrismPlayLayer, PlayLayer) {
 
         const auto win = CCDirector::get()->getWinSize();
         const float x = std::clamp(static_cast<float>(cfgInt("hud-x")), 8.f, std::max(8.f, win.width - 180.f));
-        const float top = std::clamp(win.height - static_cast<float>(cfgInt("hud-y")), 8.f, std::max(8.f, win.height - 8.f));
+        const float desiredTop = win.height - static_cast<float>(cfgInt("hud-y"));
+        const float maxTop = std::max(8.f, win.height - 8.f);
         const float requestedScale = static_cast<float>(std::clamp(cfgFloat("hud-scale"), 0.2, 2.0));
         const float availableWidth = std::max(80.f, win.width - x - 12.f);
         label->limitLabelWidth(availableWidth, requestedScale, 0.3f);
         label->setOpacity(static_cast<GLubyte>(std::clamp(cfgFloat("hud-opacity"), 0.1, 1.0) * 255.0));
-        label->setPosition({x, top});
 
         if (showTimings) {
-            const float detailTop = top - label->getContentSize().height * label->getScale() - 12.f;
             auto& clickLabel = m_fields->clickLabel;
             std::string clickText = "NO PRESSES YET";
-            if (st.hasLastPress) {
-                const char* player = st.lastPressPlayer == 0 ? "P1" : "P2";
-                if (st.hasLastPressGap) {
+            const auto& recentPresses = st.clickTiming.recent();
+            if (!recentPresses.empty()) {
+                clickText.clear();
+            }
+            for (size_t i = 0; i < recentPresses.size(); ++i) {
+                const auto& press = recentPresses[i];
+                const char* player = press.player == 0 ? "P1" : "P2";
+                if (press.hasGap) {
                     const double tps = st.tpsActive() ? static_cast<double>(std::clamp<int64_t>(cfgInt("custom-tps"), 30, 2000)) : 240.0;
                     char gapText[48];
-                    std::snprintf(gapText, sizeof gapText, "+%uf / %.1fms est", st.lastPressGap,
-                                  static_cast<double>(st.lastPressGap) * 1000.0 / tps);
-                    clickText = std::string(player) + "  #" + std::to_string(st.observedPresses) + "  F " +
-                                std::to_string(st.lastPressFrame) + "  " + gapText;
+                    std::snprintf(gapText, sizeof gapText, "+%uf / %.1fms est", press.gapFrames,
+                                  static_cast<double>(press.gapFrames) * 1000.0 / tps);
+                    clickText += std::string(player) + "  #" + std::to_string(press.sequence) + "  F " +
+                                 std::to_string(press.frame) + "  " + gapText;
                 } else {
-                    clickText = std::string(player) + "  #" + std::to_string(st.observedPresses) + "  F " +
-                                std::to_string(st.lastPressFrame) + "  FIRST";
+                    clickText += std::string(player) + "  #" + std::to_string(press.sequence) + "  F " +
+                                 std::to_string(press.frame) + "  FIRST";
                 }
+                if (i + 1 < recentPresses.size()) clickText += "\n";
             }
             if (clickText != m_fields->lastClickText) {
                 m_fields->lastClickText = clickText;
                 clickLabel->setString(clickText.c_str());
             }
             clickLabel->limitLabelWidth(availableWidth, 0.42f, 0.28f);
-            clickLabel->setPosition({x, detailTop});
-            m_fields->timingTitle->setPosition({x, detailTop - 20.f});
+            const float labelHeight = label->getContentSize().height * label->getScale();
+            const float clickHeight = clickLabel->getContentSize().height * clickLabel->getScale();
+            const float titleHeight = m_fields->timingTitle->getContentSize().height * m_fields->timingTitle->getScale();
+            float rowHeight = 0.f;
+            for (auto* row : m_fields->timingRows) {
+                rowHeight = std::max(rowHeight, row->getContentSize().height * row->getScale());
+            }
+            const float detailHeight = labelHeight + 12.f + clickHeight + 8.f + titleHeight + 4.f +
+                                       static_cast<float>(m_fields->timingRows.size() - 1) * 15.f + rowHeight;
+            const bool timingFits = detailHeight + 8.f <= maxTop;
+            for (auto* row : m_fields->timingRows) row->setVisible(timingFits);
+            m_fields->timingTitle->setVisible(timingFits);
+            clickLabel->setVisible(timingFits);
+            const float top = timingFits
+                ? std::clamp(desiredTop, detailHeight + 8.f, maxTop)
+                : std::clamp(desiredTop, 8.f, maxTop);
+            label->setPosition({x, top});
+            const float detailTop = top - labelHeight - 12.f;
+            if (timingFits) {
+                clickLabel->setPosition({x, detailTop});
+                m_fields->timingTitle->setPosition({x, detailTop - clickHeight - 8.f});
+            }
 
             static const char* const bucketNames[] = {"0-1f", "2f", "3f", "4f", "5f", "6f", "7-8f", "9-10f", "11+f"};
             uint32_t peak = 1;
-            for (const auto count : st.pressGapCounts) peak = std::max(peak, count);
+            for (const auto count : st.clickTiming.gapCounts()) peak = std::max(peak, count);
             for (size_t row = 0; row < m_fields->timingRows.size(); ++row) {
                 const size_t bucket = m_fields->timingRows.size() - row - 1;
-                const auto count = st.pressGapCounts[bucket];
+                const auto count = st.clickTiming.gapCounts()[bucket];
                 const size_t barLength = std::min<size_t>(10, static_cast<size_t>(count) * 10 / peak);
                 const std::string value = std::string(bucketNames[bucket]) + "  " + std::to_string(count) + "  " + std::string(barLength, '|');
                 if (value != m_fields->lastTimingRows[row]) {
                     m_fields->lastTimingRows[row] = value;
                     m_fields->timingRows[row]->setString(value.c_str());
                 }
-                m_fields->timingRows[row]->setPosition({x, detailTop - 39.f - static_cast<float>(row) * 15.f});
+                const float rowsTop = detailTop - clickHeight - 8.f - titleHeight - 4.f;
+                m_fields->timingRows[row]->setPosition({x, rowsTop - static_cast<float>(row) * 15.f});
             }
+        } else {
+            label->setPosition({x, std::clamp(desiredTop, 8.f, maxTop)});
         }
     }
 };
