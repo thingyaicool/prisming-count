@@ -99,6 +99,9 @@ in-game) and all its overlays.
   Custom FPS still calls the Cocos animation-interval API on Android.
 - Macro storage uses `Mod::get()->getSaveDir()/macros`, reports filesystem failures to the existing
   Save/Load controls, and pause controls adapt their layout and minimum touch height to the window.
+- The pause screen now adds one Prism entry point. Its popup has module navigation, a Frame Counter /
+  Macro page, a Pathfinder status page, and a shortcut to Geode's Prism settings. The UI compiles in
+  source, but touch layout and interaction still need in-game verification.
 - Local `make test`: 212 checks passed. Geode compilation and the in-game checklist remain pending
   hosted CI and compatible game installations. A successful build alone does not prove correct
   frame sampling, macro replay timing, safe-mode behavior, or custom TPS/FPS behavior.

@@ -37,6 +37,13 @@ not been verified on a connected device.
 For engine-independent tests, run `make test`. A local Geode build requires the Geode CLI, SDK, and
 platform binaries installed for the desired target.
 
+## Interface
+
+The pause screen adds one compact **Prism** button. It opens a module hub with Frame Counter, Pathfinder,
+and Settings entries. Frame Counter contains the existing Record / Play / Stop / Save / Load / Mark
+controls; Settings opens Geode's settings page for Prism. Pathfinder currently exposes only its status:
+the solver core exists, but an in-game Geometry Dash physics simulator and route UI are not implemented.
+
 ## Implemented in source (not yet verified in-game)
 
 - **Frame counter HUD** in-level: frame, optional time, optional FPS/TPS, REC/PLAY status, guard badge.
