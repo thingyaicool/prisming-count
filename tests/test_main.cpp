@@ -225,6 +225,12 @@ static void testWindows() {
 // --------------------------------------------------------------- timing
 static void testTiming() {
     section("timing");
+    CHECK(observedPressGapBucket(0) == 0 && observedPressGapBucket(1) == 0);
+    CHECK(observedPressGapBucket(2) == 1 && observedPressGapBucket(3) == 2);
+    CHECK(observedPressGapBucket(4) == 3 && observedPressGapBucket(5) == 4);
+    CHECK(observedPressGapBucket(6) == 5 && observedPressGapBucket(7) == 6);
+    CHECK(observedPressGapBucket(8) == 6 && observedPressGapBucket(9) == 7);
+    CHECK(observedPressGapBucket(10) == 7 && observedPressGapBucket(11) == 8);
     for (auto [tps, fps] : std::vector<std::pair<uint32_t, uint32_t>>{{240, 60}, {240, 144}, {1000, 360}, {480, 60}, {60, 240}, {7, 3}}) {
         StepScheduler s(tps, fps);
         uint64_t total = 0;

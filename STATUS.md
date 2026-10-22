@@ -102,6 +102,11 @@ in-game) and all its overlays.
 - The pause screen now adds one Prism entry point. Its popup has module navigation, a Frame Counter /
   Macro page, a Pathfinder status page, and a shortcut to Geode's Prism settings. The UI compiles in
   source, but touch layout and interaction still need in-game verification.
+- The HUD now records real press events and displays the latest click's player, sequence number,
+  sampled frame, estimated interval, and a reference-style colored histogram. Histogram values are
+  observed press gaps, not tested success-window widths. The FPS override now restores its captured
+  baseline when disabled or when leaving the level. These latest changes still need CI and in-game
+  verification.
 - Local `make test`: 212 checks passed. Geode compilation and the in-game checklist remain pending
   hosted CI and compatible game installations. A successful build alone does not prove correct
   frame sampling, macro replay timing, safe-mode behavior, or custom TPS/FPS behavior.

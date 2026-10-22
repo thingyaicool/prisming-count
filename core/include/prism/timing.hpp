@@ -14,6 +14,20 @@ namespace prism {
 inline constexpr uint32_t kMaxTps = 100000;
 inline constexpr uint32_t kMaxFps = 100000;
 
+// Buckets an observed press-to-press interval for a compact HUD histogram.
+// These are measured input gaps, not verified success-window widths.
+inline constexpr size_t observedPressGapBucket(uint32_t gapFrames) {
+    if (gapFrames <= 1) return 0;
+    if (gapFrames <= 2) return 1;
+    if (gapFrames <= 3) return 2;
+    if (gapFrames <= 4) return 3;
+    if (gapFrames <= 5) return 4;
+    if (gapFrames <= 6) return 5;
+    if (gapFrames <= 8) return 6;
+    if (gapFrames <= 10) return 7;
+    return 8;
+}
+
 // Distributes `tps` physics steps over `fps` render frames per second using a
 // Bresenham-style accumulator: the per-frame step count is deterministic and
 // the total over any whole second is exactly `tps`.

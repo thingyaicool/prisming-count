@@ -48,6 +48,10 @@ class $modify(PrismBaseGameLayer, GJBaseGameLayer) {
 
     void handleButton(bool down, int button, bool isPlayer1) {
         auto& st = state();
+        if (!st.injecting && down && button == 1) {
+            const uint32_t frame = st.inCommands ? st.curFrame : st.curFrame + 1;
+            st.observePress(frame, static_cast<uint8_t>(isPlayer1 ? 0 : 1));
+        }
         if (!st.injecting) {
             if (st.mode == MacroMode::Playing && cfgBool("macro-block-input")) return;  // ignore real clicks
             if (st.mode == MacroMode::Recording && button == 1) {

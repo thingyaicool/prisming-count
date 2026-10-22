@@ -3,6 +3,7 @@
 
 #include <Geode/Geode.hpp>
 
+#include <array>
 #include <cctype>
 #include <exception>
 #include <filesystem>
@@ -14,6 +15,7 @@
 #include "prism/analysis.hpp"
 #include "prism/control.hpp"
 #include "prism/macro.hpp"
+#include "prism/timing.hpp"
 
 namespace prism_glue {
 
@@ -36,6 +38,15 @@ struct State {
     bool inCommands = false;     // true while the original processCommands runs
     bool injecting = false;      // true while we feed playback inputs to the game
 
+    // Observed physical presses, not success-window measurements.
+    std::array<uint32_t, 9> pressGapCounts{};
+    uint32_t observedPresses = 0;
+    uint32_t lastPressFrame = 0;
+    uint32_t lastPressGap = 0;
+    uint8_t lastPressPlayer = 0;
+    bool hasLastPress = false;
+    bool hasLastPressGap = false;
+
     // --- tools ---
     prism::MarkerList markers;
     prism::LeaderboardGuard guard;
@@ -43,6 +54,8 @@ struct State {
     // --- display ---
     double fpsSmooth = 0.0;
     int appliedFps = 0;
+    float originalFpsTarget = 0.f;
+    bool originalFpsVariable = false;
 
     static State& get() {
         static State s;
@@ -50,6 +63,20 @@ struct State {
     }
 
     bool tpsActive() const { return cfgBool("custom-tps-enabled"); }
+
+    void observePress(uint32_t frame, uint8_t player) {
+        if (hasLastPress && frame >= lastPressFrame) {
+            lastPressGap = frame - lastPressFrame;
+            hasLastPressGap = true;
+            ++pressGapCounts[prism::observedPressGapBucket(lastPressGap)];
+        } else {
+            hasLastPressGap = false;
+        }
+        lastPressFrame = frame;
+        lastPressPlayer = player;
+        hasLastPress = true;
+        ++observedPresses;
+    }
 
     // Re-evaluate which physics-altering features are on and taint the guard.
     void refreshGuard() {
@@ -62,6 +89,13 @@ struct State {
         playIdx = 0;
         playLastFrame = 0;
         curFrame = 0;
+        pressGapCounts.fill(0);
+        observedPresses = 0;
+        lastPressFrame = 0;
+        lastPressGap = 0;
+        lastPressPlayer = 0;
+        hasLastPress = false;
+        hasLastPressGap = false;
         if (mode == MacroMode::Recording) macro = prism::Macro{};
         refreshGuard();
     }

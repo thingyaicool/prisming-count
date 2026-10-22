@@ -27,6 +27,16 @@
 			"name": "Show FPS / TPS",
 			"description": "Adds measured FPS and the active TPS."
 		},
+		"hud-show-click-timings": {
+			"type": "bool", "default": true,
+			"name": "Show click timing histogram",
+			"description": "Shows the latest physical press frame and observed gaps between presses; these are not verified success windows."
+		},
+		"hud-show-click-timings": {
+			"type": "bool", "default": true,
+			"name": "Show click timing histogram",
+			"description": "Shows the latest physical press frame and observed gaps between presses; these are not verified success windows."
+		},
 		"hud-x": {
 			"type": "int", "default": 8, "min": 0, "max": 1200,
 			"name": "HUD X offset", "description": "Pixels from the left edge."

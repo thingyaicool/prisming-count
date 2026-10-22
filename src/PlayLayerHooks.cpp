@@ -5,6 +5,7 @@
 #include <Geode/platform/cplatform.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <string>
 
@@ -16,7 +17,12 @@ using namespace prism_glue;
 class $modify(PrismPlayLayer, PlayLayer) {
     struct Fields {
         CCLabelBMFont* label = nullptr;
+        CCLabelBMFont* clickLabel = nullptr;
+        CCLabelBMFont* timingTitle = nullptr;
+        std::array<CCLabelBMFont*, 9> timingRows{};
         std::string lastText;
+        std::string lastClickText;
+        std::array<std::string, 9> lastTimingRows{};
     };
 
     void setupHasCompleted() {
@@ -29,6 +35,29 @@ class $modify(PrismPlayLayer, PlayLayer) {
         // The UI layer is not affected by camera triggers and stays above gameplay.
         m_uiLayer->addChild(label, 100);
         m_fields->label = label;
+
+        m_fields->clickLabel = CCLabelBMFont::create("NO PRESSES YET", "chatFont.fnt");
+        m_fields->clickLabel->setAnchorPoint({0.f, 1.f});
+        m_fields->clickLabel->setScale(0.42f);
+        m_uiLayer->addChild(m_fields->clickLabel, 100);
+
+        m_fields->timingTitle = CCLabelBMFont::create("OBSERVED CLICK GAPS", "chatFont.fnt");
+        m_fields->timingTitle->setAnchorPoint({0.f, 1.f});
+        m_fields->timingTitle->setScale(0.38f);
+        m_fields->timingTitle->setColor({180, 205, 213});
+        m_uiLayer->addChild(m_fields->timingTitle, 100);
+
+        static const ccColor3B bucketColors[] = {
+            {255, 91, 117}, {255, 137, 90}, {255, 185, 83}, {244, 218, 92}, {170, 220, 100},
+            {99, 215, 139}, {75, 205, 188}, {95, 178, 226}, {171, 151, 245},
+        };
+        for (size_t i = 0; i < m_fields->timingRows.size(); ++i) {
+            m_fields->timingRows[i] = CCLabelBMFont::create("", "chatFont.fnt");
+            m_fields->timingRows[i]->setAnchorPoint({0.f, 1.f});
+            m_fields->timingRows[i]->setScale(0.36f);
+            m_fields->timingRows[i]->setColor(bucketColors[i]);
+            m_uiLayer->addChild(m_fields->timingRows[i], 100);
+        }
 
         state().beginAttempt();
         applyFps();
@@ -47,30 +76,57 @@ class $modify(PrismPlayLayer, PlayLayer) {
 
     void onQuit() {
         // Leaving the level always ends any recording/playback session.
+        restoreFps();
         state().mode = MacroMode::Idle;
         state().refreshGuard();
         PlayLayer::onQuit();
     }
 
-    void applyFps() {
-        if (!cfgBool("custom-fps-enabled")) return;
-        const int fps = static_cast<int>(std::clamp<int64_t>(cfgInt("custom-fps"), 30, 1000));
+    void restoreFps() {
         auto& st = state();
+        if (st.appliedFps == 0) return;
+        const float original = st.originalFpsTarget > 0.f ? st.originalFpsTarget : 60.f;
+        GameManager::get()->m_customFPSTarget = original;
+    #if !defined(GEODE_IS_ANDROID)
+        GameManager::get()->setGameVariable("0116", st.originalFpsVariable);
+    #endif
+        CCApplication::sharedApplication()->setAnimationInterval(1.0 / static_cast<double>(original));
+        st.appliedFps = 0;
+        st.originalFpsTarget = 0.f;
+    }
+
+    void applyFps() {
+        auto& st = state();
+        if (!cfgBool("custom-fps-enabled")) return restoreFps();
+        const int fps = static_cast<int>(std::clamp<int64_t>(cfgInt("custom-fps"), 30, 1000));
         if (st.appliedFps == fps) return;
+        if (st.appliedFps == 0) {
+            st.originalFpsTarget = GameManager::get()->m_customFPSTarget;
+            if (st.originalFpsTarget <= 0.f) st.originalFpsTarget = 60.f;
+        #if !defined(GEODE_IS_ANDROID)
+            st.originalFpsVariable = GameManager::get()->getGameVariable("0116");
+        #endif
+        }
         st.appliedFps = fps;
         GameManager::get()->m_customFPSTarget = static_cast<float>(fps);
     #if !defined(GEODE_IS_ANDROID)
         GameManager::get()->setGameVariable("0116", true);
     #endif
-        CCApplication::sharedApplication()->setAnimationInterval(1.0 / fps);
+        CCApplication::sharedApplication()->setAnimationInterval(1.0 / static_cast<double>(fps));
     }
 
     void updateHud(float dt) {
         auto* label = m_fields->label;
         if (!label) return;
 
+        applyFps();
+
         const bool show = cfgBool("show-frame-counter");
         label->setVisible(show);
+        const bool showTimings = show && cfgBool("hud-show-click-timings");
+        m_fields->clickLabel->setVisible(showTimings);
+        m_fields->timingTitle->setVisible(showTimings);
+        for (auto* row : m_fields->timingRows) row->setVisible(showTimings);
         if (!show) return;
 
         auto& st = state();
@@ -78,7 +134,7 @@ class $modify(PrismPlayLayer, PlayLayer) {
         if (dt > 0.f) st.fpsSmooth = st.fpsSmooth <= 0.0 ? 1.0 / dt : st.fpsSmooth * 0.9 + (1.0 / dt) * 0.1;
 
         const int frame = static_cast<int>(std::max<int64_t>(0, m_gameState.m_currentProgress));
-        std::string text = "Frame " + std::to_string(frame);
+        std::string text = "FB COUNTER\nFrame " + std::to_string(frame);
 
         if (cfgBool("hud-show-time")) {
             const float tps = st.tpsActive() ? static_cast<float>(cfgInt("custom-tps")) : 240.f;
@@ -106,10 +162,51 @@ class $modify(PrismPlayLayer, PlayLayer) {
         }
 
         const auto win = CCDirector::get()->getWinSize();
+        const float x = std::clamp(static_cast<float>(cfgInt("hud-x")), 8.f, std::max(8.f, win.width - 180.f));
+        const float top = std::clamp(win.height - static_cast<float>(cfgInt("hud-y")), 8.f, std::max(8.f, win.height - 8.f));
         label->setScale(static_cast<float>(cfgFloat("hud-scale")));
         label->setOpacity(static_cast<GLubyte>(std::clamp(cfgFloat("hud-opacity"), 0.1, 1.0) * 255.0));
-        label->setPosition({static_cast<float>(cfgInt("hud-x")), win.height - static_cast<float>(cfgInt("hud-y"))});
+        label->setPosition({x, top});
 
-        applyFps();
+        if (showTimings) {
+            const float detailTop = top - label->getContentSize().height * label->getScale() - 12.f;
+            auto& clickLabel = m_fields->clickLabel;
+            std::string clickText = "NO PRESSES YET";
+            if (st.hasLastPress) {
+                const char* player = st.lastPressPlayer == 0 ? "P1" : "P2";
+                if (st.hasLastPressGap) {
+                    const double tps = st.tpsActive() ? static_cast<double>(std::clamp<int64_t>(cfgInt("custom-tps"), 30, 2000)) : 240.0;
+                    char gapText[48];
+                    std::snprintf(gapText, sizeof gapText, "+%uf / %.1fms est", st.lastPressGap,
+                                  static_cast<double>(st.lastPressGap) * 1000.0 / tps);
+                    clickText = std::string(player) + "  #" + std::to_string(st.observedPresses) + "  F " +
+                                std::to_string(st.lastPressFrame) + "  " + gapText;
+                } else {
+                    clickText = std::string(player) + "  #" + std::to_string(st.observedPresses) + "  F " +
+                                std::to_string(st.lastPressFrame) + "  FIRST";
+                }
+            }
+            if (clickText != m_fields->lastClickText) {
+                m_fields->lastClickText = clickText;
+                clickLabel->setString(clickText.c_str());
+            }
+            clickLabel->setPosition({x, detailTop});
+            m_fields->timingTitle->setPosition({x, detailTop - 20.f});
+
+            static const char* const bucketNames[] = {"0-1f", "2f", "3f", "4f", "5f", "6f", "7-8f", "9-10f", "11+f"};
+            uint32_t peak = 1;
+            for (const auto count : st.pressGapCounts) peak = std::max(peak, count);
+            for (size_t row = 0; row < m_fields->timingRows.size(); ++row) {
+                const size_t bucket = m_fields->timingRows.size() - row - 1;
+                const auto count = st.pressGapCounts[bucket];
+                const size_t barLength = std::min<size_t>(10, static_cast<size_t>(count) * 10 / peak);
+                const std::string value = std::string(bucketNames[bucket]) + "  " + std::to_string(count) + "  " + std::string(barLength, '|');
+                if (value != m_fields->lastTimingRows[row]) {
+                    m_fields->lastTimingRows[row] = value;
+                    m_fields->timingRows[row]->setString(value.c_str());
+                }
+                m_fields->timingRows[row]->setPosition({x, detailTop - 39.f - static_cast<float>(row) * 15.f});
+            }
+        }
     }
 };
