@@ -1,21 +1,43 @@
 # Prism (Geode mod for Geometry Dash 2.2081)
 
-Working name. Windows, GD 2.2081, Geode v5.11.2.
+Working name. Supported game version: Geometry Dash 2.2081. The build uses Geode SDK v5.11.2.
 
-## Build (no local setup needed)
+## Build and artifacts
 
-1. Create a GitHub repo and push this whole folder (keep `.github/`).
-2. Open the **Actions** tab. The "Build Prism (Windows)" run starts on push.
-3. When it is green, download the **Build Output** artifact. It contains `local.prism.geode`.
-4. Put that file in `<GD folder>\geode\mods\` and start the game.
+Push changes to GitHub or manually start **Build Prism** from Actions. Core tests run first, followed
+by three platform builds using Geode SDK v5.11.2:
 
-If the build is red, open the failed step and send me the error text. I haven't been able to compile
-the Geode side yet (the sandbox I work in has no Geode SDK), so the first CI run is the first real
-compile. Expect a few API-name fixes.
+| Artifact | Target | Intended platform |
+|---|---|---|
+| `Prism-Windows` | Win64 | Windows x86-64 |
+| `Prism-Android64` | Android64 (`arm64-v8a`) | Android ARM 64-bit |
+| `Prism-Android32` | Android32 (`armeabi-v7a`) | Android ARM 32-bit |
 
-Local build instead: install Geode CLI, `geode sdk install`, `geode sdk install-binaries`, then `geode build`.
+Open a successful workflow run, download the matching artifact, and extract the downloaded archive.
+Install the `.geode` file using the Geode Android launcher, or copy it to
+`Android/media/com.geode.launcher/game/geode/mods/`. Restart Geometry Dash or use Geode's reload
+option after installation.
 
-## What works right now (once it compiles)
+The official Geode build action maps Android64 to `arm64-v8a` and Android32 to `armeabi-v7a`; it
+does not provide an x86_64 Android target. An Intel Chromebook can load one of these only if its
+Android/Geode environment supports the corresponding ARM ABI or compatible translation. That has
+not been verified on a connected device.
+
+### Troubleshooting
+
+- If a build fails, open the failed platform job and inspect its first CMake or compiler error. No
+   platform build starts unless the test job succeeds.
+- If Geode reports an unsupported platform or ABI, use the artifact matching the installed game's
+   ABI. Prism currently has no x86_64 Android binary.
+- If the mod does not load, verify Geometry Dash 2.2081 and Geode compatibility with SDK v5.11.2,
+   install the extracted `.geode` file in Geode's mods folder, then restart/reload the game.
+- A successful build confirms compilation and packaging only. It does not verify in-game behavior,
+   macro timing, custom TPS/FPS behavior, or safe-mode behavior on a device.
+
+For engine-independent tests, run `make test`. A local Geode build requires the Geode CLI, SDK, and
+platform binaries installed for the desired target.
+
+## Implemented in source (not yet verified in-game)
 
 - **Frame counter HUD** in-level: frame, optional time, optional FPS/TPS, REC/PLAY status, guard badge.
   Position, scale and opacity are settings.
@@ -24,21 +46,21 @@ Local build instead: install Geode CLI, `geode sdk install`, `geode sdk install-
 - **Custom TPS** and **Custom FPS** (settings). EXPERIMENTAL.
 - **Safe mode**: attempts that used macro playback or custom TPS don't save progress.
 
-## First-run checklist (these are the assumptions I could not check)
+## In-game verification checklist
 
-Do these in order. If one fails, tell me which and what you saw.
+These behaviors still need testing in Geometry Dash on compatible platforms:
 
 1. **Mod loads**: Geode lists "Prism" with no error.
-2. **A1, frame counter**: start any level. The "Frame N" counter should count up about 240 per second
+2. **Frame counter**: start any level. The "Frame N" counter should count up about 240 per second
    (a 30-second level ends near frame 7200). If it stays at 0 or counts in a different rate, the
    frame source is wrong.
-3. **A2, recording**: Pause > Rec, restart the attempt, click a few times, pause > Stop. The HUD
+3. **Recording**: Pause > Rec, restart the attempt, click a few times, pause > Stop. The HUD
    shows REC with a click count while recording.
 4. **Playback**: Pause > Play, restart. The icon should repeat your clicks and the HUD shows PLAY n/N.
    If it is consistently off by one frame, tell me (the record/playback sampling point needs a shift).
-5. **A4, guard**: after a playback attempt, finish a level. Progress should not be saved and the
+5. **Safe mode**: after a playback attempt, finish a level. Progress should not be saved and the
    Geode log should say "Prism safe mode".
-6. **A3, custom TPS**: only test in an offline/practice context. Turn on Custom TPS = 240 first. Behaviour
+6. **Custom TPS**: only test in an offline/practice context. Turn on Custom TPS = 240 first. Behaviour
    should be identical to vanilla. Then try 480.
 7. **FPS**: turn on Custom FPS = 144 and watch the HUD "Show FPS / TPS" reading.
 

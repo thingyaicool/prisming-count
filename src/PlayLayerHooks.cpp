@@ -2,6 +2,7 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/platform/cplatform.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -58,7 +59,9 @@ class $modify(PrismPlayLayer, PlayLayer) {
         if (st.appliedFps == fps) return;
         st.appliedFps = fps;
         GameManager::get()->m_customFPSTarget = static_cast<float>(fps);
+    #if !defined(GEODE_IS_ANDROID)
         GameManager::get()->setGameVariable("0116", true);
+    #endif
         CCApplication::sharedApplication()->setAnimationInterval(1.0 / fps);
     }
 
@@ -74,7 +77,7 @@ class $modify(PrismPlayLayer, PlayLayer) {
         st.refreshGuard();
         if (dt > 0.f) st.fpsSmooth = st.fpsSmooth <= 0.0 ? 1.0 / dt : st.fpsSmooth * 0.9 + (1.0 / dt) * 0.1;
 
-        const int frame = std::max(0, m_gameState.m_currentProgress);
+        const int frame = static_cast<int>(std::max<int64_t>(0, m_gameState.m_currentProgress));
         std::string text = "Frame " + std::to_string(frame);
 
         if (cfgBool("hud-show-time")) {

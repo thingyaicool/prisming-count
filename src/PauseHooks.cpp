@@ -4,6 +4,8 @@
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 
+#include <algorithm>
+
 #include "State.hpp"
 
 using namespace geode::prelude;
@@ -22,7 +24,6 @@ class $modify(PrismPauseLayer, PauseLayer) {
         auto* menu = CCMenu::create();
         menu->setID("prism-menu"_spr);
         const auto win = CCDirector::get()->getWinSize();
-        menu->setPosition({62.f, win.height * 0.5f});
 
         struct Btn {
             char const* text;
@@ -36,13 +37,26 @@ class $modify(PrismPauseLayer, PauseLayer) {
             {"Load", menu_selector(PrismPauseLayer::onLoad)},
             {"Mark", menu_selector(PrismPauseLayer::onMark)},
         };
-        constexpr float gap = 34.f;
         const int n = static_cast<int>(sizeof btns / sizeof btns[0]);
+        constexpr float minTouchHeight = 44.f;
+        const bool useGrid = win.height < n * minTouchHeight + 32.f;
+        const float menuX = std::clamp(win.width * 0.1f, 48.f, 72.f);
+        const float verticalGap = std::min(48.f, std::max(0.f, win.height - 32.f) / (n - 1));
+        menu->setPosition({useGrid ? 0.f : menuX, win.height * 0.5f});
         for (int i = 0; i < n; ++i) {
             auto* spr = ButtonSprite::create(btns[i].text);
-            spr->setScale(0.6f);
+            const float contentHeight = std::max(1.f, spr->getContentSize().height);
+            spr->setScale(std::max(0.75f, minTouchHeight / contentHeight));
             auto* item = CCMenuItemSpriteExtra::create(spr, this, btns[i].cb);
-            item->setPosition({0.f, (static_cast<float>(n - 1) * 0.5f - static_cast<float>(i)) * gap});
+            if (useGrid) {
+                const int row = i / 2;
+                const float columnGap = std::clamp(win.width * 0.18f, 72.f, 108.f);
+                const float rowGap = std::min(48.f, std::max(0.f, win.height - 32.f) / 2.f);
+                item->setPosition({columnGap * (i % 2) + 48.f,
+                                   (1.f - static_cast<float>(row)) * rowGap});
+            } else {
+                item->setPosition({0.f, (static_cast<float>(n - 1) * 0.5f - static_cast<float>(i)) * verticalGap});
+            }
             menu->addChild(item);
         }
         this->addChild(menu);
