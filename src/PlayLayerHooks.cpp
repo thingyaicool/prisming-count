@@ -164,7 +164,9 @@ class $modify(PrismPlayLayer, PlayLayer) {
         const auto win = CCDirector::get()->getWinSize();
         const float x = std::clamp(static_cast<float>(cfgInt("hud-x")), 8.f, std::max(8.f, win.width - 180.f));
         const float top = std::clamp(win.height - static_cast<float>(cfgInt("hud-y")), 8.f, std::max(8.f, win.height - 8.f));
-        label->setScale(static_cast<float>(cfgFloat("hud-scale")));
+        const float requestedScale = static_cast<float>(std::clamp(cfgFloat("hud-scale"), 0.2, 2.0));
+        const float availableWidth = std::max(80.f, win.width - x - 12.f);
+        label->limitLabelWidth(availableWidth, requestedScale, 0.3f);
         label->setOpacity(static_cast<GLubyte>(std::clamp(cfgFloat("hud-opacity"), 0.1, 1.0) * 255.0));
         label->setPosition({x, top});
 
@@ -190,6 +192,7 @@ class $modify(PrismPlayLayer, PlayLayer) {
                 m_fields->lastClickText = clickText;
                 clickLabel->setString(clickText.c_str());
             }
+            clickLabel->limitLabelWidth(availableWidth, 0.42f, 0.28f);
             clickLabel->setPosition({x, detailTop});
             m_fields->timingTitle->setPosition({x, detailTop - 20.f});
 
